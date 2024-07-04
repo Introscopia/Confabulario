@@ -105,7 +105,7 @@ int main( int argc, char *argv[] ){
 				int prox = CFB_Dialogo( R, &M, "Ferramentas?", "content/O projeto consiste.txt" );
 				if( prox > 0 ){
 					nodes_set_connection( &(M.grafo), 7, prox, true );
-					M.grafo.knowledge[ prox ] = 2;
+					M.grafo.knowledge[ prox ] = 1;
 				}
 				} break;
 				
