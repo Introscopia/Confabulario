@@ -1,0 +1,13 @@
+* O projeto consiste de ferramenta de criação de grafos, e uma biblioteca para a linguagem C de programação contendo toda a infraestrutura de renderização e interatividade e também diversos elementos lúdicos prontos, como dados tridimensionais, um sistema de árvores de diálogo, entre outros.
+	> O que é um grafo?
+		* RETURN 2
+	> Me fale mais sobre a tal "biblioteca"
+		* RETURN 3
+	> Por que linguagem C?
+		* RETURN 4
+	> Quero ver os dados 3D!
+		* RETURN 5
+	> Sistema de diálogo?
+		* RETURN 6
+	> Seguir em Frente.
+		* RETURN 160
