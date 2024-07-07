@@ -1,0 +1,32 @@
+* Olá! Este é o formato de diálogos do Confabulário.
+	> Ta...
+		* As mensagens são indicadas com o asterisco (*) e as respostas com o 'maior que' (>).
+		  O dialogo é estruturado como uma 'árvore' de indentação. Ta vendo os espaços no começo das linhas?
+		  É o que nós chamamos de indentação. Na verdade não são espaços, são tabs (aquele botão com duas flechinhas apontando pra esquera e pra direita, do lado do 'Q'). O número de tabs no começo da linha é que determina a posição do elemento na árvore. O "Olá" no começo tem zero tabs, ele é a 'raiz' da árvore. depois dele tem as duas respotas: "Ta..." e "Ham?". Ambas tem 1 tab no começo de suas linhas. Este texto que você está lendo agora tem 2 tabs, ele é um 'galho' do "Ta...", num programa-fabula, você só ve esse texto se selecionar a opção "Ta...".
+			> Humm, to entendendo.
+				* Além de falas e respostas, este formato de diálogos também possibilita a atribuição de variáveis externas. Você pode passar pointers-to-int para CFB_Dialogo(), e atribuir valores aos ints da seguinte maneira:
+					> Atribuir (123) à var0.
+						*[0] = 123
+					> Atribuir (123) à var1.
+						*[1] = 123
+					> Atribuir (999) à var0.
+						*[0] = 999 
+					> Atribuir (999) à var1.
+						*[1] = 999
+				* E por fim, nos terminais da árvore, as "folhas", podemos devolver um valor int.
+					> devolver 1.
+						* RETURN 1
+					> devolver 2.
+						* RETURN 2
+					> devolver 1000.
+						* RETURN 1000
+	> Ham?
+		* Pera, eu nem comecei. Qual parte cê não entendeu?
+			> nenhuma
+				* Ué? Cê fala português não?
+					> não.
+						* RETURN 1
+			> Qq é confabulário?
+				* É esse meu projeto. Uma suite de ferramentas de criação de experiências interativas.
+					> Ah.
+						* RETURN 2

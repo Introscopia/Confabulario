@@ -1,0 +1,15 @@
+* Como um exemplo, este demo que você está lendo neste instante também é um jogo! Sim, isso mesmo! Tem quatro itens espalhados pelo mapa, veja se consegue encontrar todos eles!
+	> Vou procurar!
+		* RETURN 1
+	> Consegui!
+		* RETURN 2
+	> Acho que preciso de uma dica...
+		* São os quatro naipes do baralho... procure por eles nas outras áreas do demo!
+			> Ok!
+				* RETURN 3
+			> Já Procurei!!
+				* Copas está na área do grafo de ladrilhos.
+				Paus está na área do grafo orgânico.
+				Ouros está no final do labirinto.
+				Espada está depois do último exemplo dos dados. Você tera que ter sorte para conseguir este! (mas você pode voltar naquele nó e tentar de novo quantas vezes quiser! heheh)
+					* RETURN 4
