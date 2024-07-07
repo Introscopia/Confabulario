@@ -623,6 +623,7 @@ int main( int argc, char *argv[] ){
 								for (int si = selected_N-1; si >= 0; --si ){
 									select_linked( selected[si], selected, &selected_N, &NM );
 								}
+								selection_altered = 1;
 							}
 							// Cut: Sever all links to/from selection
 							else if( event.key.keysym.sym == SDLK_c ){
