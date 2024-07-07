@@ -1,4 +1,0 @@
-* Uma Biblioteca, no âmbito da programação, é uma coleção de código pronto e bem 'embalado' para realizar alguma tarefa específica. São 'módulos' de código, basicamente.
-	> ->
-* Confabulário é uma 'lib' simples, e ainda com muito espaço para crescer. Ela consiste basicamente da infraestrutura do grafo, ou 'mapa' se preferir, e dos elementos interativos. Você está lendo esse texto em um desses elementos, o sistema de diálogos! Tudo que aparece quando você navega a um novo nó do grafo é uma chamada à uma função CFB.
-	> Entendi!

@@ -27,6 +27,8 @@ void destroy_nodemap( Nodemap *M );
 
 void CFB_Mensagem( SDL_Renderer *R, Mundo *M, char *msg );
 
+void CFB_Imagem( SDL_Renderer *R, Mundo *M, char *filename );
+
 
 int CFB_Escolhas( SDL_Renderer *R, Mundo *M, char *titulo, int num, ... );
 

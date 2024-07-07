@@ -354,6 +354,56 @@ void CFB_Mensagem( SDL_Renderer *R, Mundo *M, char *msg ){
 	M->popup_moldura->c = 0;
 }
 
+void CFB_Imagem( SDL_Renderer *R, Mundo *M, char *filename ){
+
+	SDL_Texture *imagem = IMG_LoadTexture( R, filename );
+	SDL_Rect dst;
+	if( imagem != NULL ){
+		int w, h;
+		SDL_QueryTexture( imagem, NULL, NULL, &w, &h );
+		//printf("w: %d, h: %d\n", w, h );
+		dst = (SDL_Rect){ 0, 0, w, h };
+		fit_rect( &dst, &(M->popup_rct) );
+		//printf("dst.x: %d, dst.y: %d, dst.w: %d, dst.h: %d\n", dst.x, dst.y, dst.w, dst.h);
+	}
+	else puts("Couldn't load image!!!!");
+
+	ABRIR_MOLDURA();
+
+	puts("<entering imagem loop>");
+	while( 1 ) {
+
+		SDL_Event event;
+		while( SDL_PollEvent(&event) ){
+			switch( event.type ){
+				case SDL_QUIT:
+					M->quit_flag = 1;
+					goto imagem_exit;
+					break;
+
+				case SDL_KEYDOWN: 
+				case SDL_MOUSEBUTTONUP:
+				case SDL_KEYUP:
+
+					goto imagem_exit;
+					break;
+			}
+		}
+
+		//SDL_SetRenderDraw_SDL_Color( R, &(M->pal_lo) );
+		//SDL_RenderClear(R);
+		render_Box_9Slice( R, M->popup_moldura, M );
+
+		SDL_RenderCopy( R, imagem, NULL, &dst );
+
+		SDL_RenderPresent(R);
+		SDL_framerateDelay(16);
+	}
+	imagem_exit:
+
+	M->popup_moldura->c = 0;
+}
+
 int CFB_Escolhas( SDL_Renderer *R, Mundo *M, char *titulo, int num, ... ){
 	
 	UI_Set ui;
