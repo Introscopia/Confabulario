@@ -136,6 +136,8 @@ void split( char *string, char *separator, char ***list, int *list_len );
 int strcchr( char *string, char C );
 // String find character, returns id, or -1 if it doesn't find it.
 int strfchr( char *string, char C );
+// String Case-Insensitive comparison
+int strcicmp(char const *a, char const *b);
 // sub-string. allocates a new char*. start inclusive, stop not-inclusivve.
 char *substr( char *string, int start, int stop );
 // returns the index of the first char that does not match, or the length of the shortest string.

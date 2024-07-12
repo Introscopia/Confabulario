@@ -93,7 +93,7 @@ void montar_mundo( SDL_Renderer *R, Mundo *M, int width, int height ){
 	  M->map_frame.w * 0.6, M->map_frame.h * 0.8 };*/
 
 	
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+	SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "0" );
 	M->borders = IMG_LoadTexture( R, "Assets/Kenney borders.png" );
 	M->borders_cols = 8;
 	M->borders_rows = 4;
@@ -108,7 +108,7 @@ void montar_mundo( SDL_Renderer *R, Mundo *M, int width, int height ){
 	moldrct.h += 2 * (moldscl * M->borders_slice);
 
 	M->popup_moldura = malloc( sizeof(Box_9Slice) );
-	build_Box_9Slice( M->popup_moldura, M, rand() % 32, moldrct, moldscl, 60 );
+	build_Box_9Slice( M->popup_moldura, M, 0, moldrct, moldscl, 60 );//rand() % 32
 
 	// DADOS
 	init_Cam( &(M->cam3d), 55 );

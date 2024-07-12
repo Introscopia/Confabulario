@@ -56,6 +56,8 @@ int main( int argc, char *argv[] ){
 	if(TTF_Init() == -1){
 		printf("TTF_Init: %s\n", TTF_GetError());
 	}
+
+	
  
 	Mundo M;
 	montar_mundo( R, &M, width, height );
@@ -139,7 +141,7 @@ int main( int argc, char *argv[] ){
 				}break;
 				
 			case 30:
-				CFB_Mensagem( R, &M, "à direita temos um exemple de grafos \"orgânicos\", feitos a partir de um gerador pseudo-físico escrito especialmente para o Confabulário.\nÀ Esquerda temos um labirinto, também gerado dentro do editor do Confabulário!");
+				CFB_Mensagem( R, &M, "à direita temos um exemplo de grafos \"orgânicos\", feitos a partir de um gerador pseudo-físico escrito especialmente para o Confabulário.\nÀ Esquerda temos um labirinto, também gerado dentro do editor do Confabulário!");
 				break;
 				
 			case 31:
@@ -213,8 +215,17 @@ int main( int argc, char *argv[] ){
 				int resposta = CFB_Dialogo( R, &M, "O Desafio", "content/desafio.txt" );
 				if( resposta == 2 ){// checar se já completou o desafio
 					if( M.COPAS && M.OUROS && M.PAUS && M.ESPADAS ){
-						nodes_set_connection( &(M.grafo), 170, 172, true );
-						M.grafo.knowledge[ 172 ] = 1;
+						int tentativas = 3;
+						M.popup_moldura->c = 60;// desabilitar animação da moldura
+						bool sabia = CFB_Senha( R, &M, "E que tipo de criatura fuma seu cachimbo dentre os cogumelos?", "sapo", &tentativas );
+						if( sabia ){
+							nodes_set_connection( &(M.grafo), 170, 172, true );
+							M.grafo.knowledge[ 172 ] = 1;
+						}
+						else{
+							M.popup_moldura->c = 60;// desabilitar animação da moldura
+							CFB_Mensagem( R, &M, "Incorreto... Ainda não conhecestes o tal cachimbeiro..." );
+						}
 					}
 					else{
 						CFB_Mensagem( R, &M, "Não... ainda não achastes todos os itens..." );
@@ -230,9 +241,13 @@ int main( int argc, char *argv[] ){
 			case 172:{
 				CFB_Mensagem( R, &M, "Parabens! Obrigado pela atenção! Vamos criar coisas legais juntos!!!");
 				const int vizinhos [] = {173, 174, 175, 176, 177, 178, 179, 180, 181, 182};
-				for (int i = 0; i < 21; ++i ){
+				for (int i = 0; i < 10; ++i ){
 					M.grafo.knowledge[ vizinhos[i] ] = 2;
 				}
+				} break;
+
+			case 183:{
+				CFB_Imagem( R, &M, "Assets/Mister-Frog-Thiago-Bianchini.png" );
 				} break;
 		}
 

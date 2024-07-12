@@ -476,14 +476,14 @@ bool CFB_Senha( SDL_Renderer *R, Mundo *M, char *titulo, char *senha, int *tenta
 	UI_Set ui;
 	build_UI_Set_Copy( &ui, &(M->GUI) );
 
-	UI_init_static_set( &ui, 2 );
+	UI_init_static_set( &ui, 1 );
 	ui.Hx = M->popup_rct_gui.w - 2;
 	ui.Vx = 1;
 	int ty = M->popup_rct_gui.y + 2 + ((M->popup_rct_gui.h-2) / 2 ) -1;
 	M->font.scale = 0.4;
-	UI_build_static_label( &ui, M->popup_rct_gui.x + 1, M->popup_rct_gui.y, R, titulo, "CC", &(M->font) );
+	//UI_build_static_label( &ui, M->popup_rct_gui.x + 1, M->popup_rct_gui.y, R, titulo, "CC", &(M->font) );
 
-	UI_build_static_label( &ui, M->popup_rct_gui.x + 1, ty-2, R, "Digite sua resposta:", "TL", &(M->font) );
+	UI_build_static_label( &ui, M->popup_rct_gui.x + 1, ty-3, R, "Digite sua resposta:", "TL", &(M->font) );
 
 	UI_init_interactive_set( &ui, 2 );
 	memset( M->buf, 0, 512 );
@@ -520,7 +520,8 @@ bool CFB_Senha( SDL_Renderer *R, Mundo *M, char *titulo, char *senha, int *tenta
 			UI_event_handler( &ui, &event );
 
 			if( confirm ){
-				if( strcmp( M->buf, senha ) == 0 ){
+				// String Case-Insensitive comparison
+				if( strcicmp( M->buf, senha ) == 0 ){
 					result = 1;
 					goto senha_exit;
 				}
@@ -546,6 +547,8 @@ bool CFB_Senha( SDL_Renderer *R, Mundo *M, char *titulo, char *senha, int *tenta
 
 			SDL_SetRenderDraw_SDL_Color( R, &(M->pal_hi) );
 			UI_display( R, &ui );
+
+			TX_render_string_wrapped_aligned( R, &(M->font), titulo, M->popup_rct.x, M->popup_rct.y, M->popup_rct.w, TX_ALIGN_CENTER );
 
 			SDL_RenderPresent(R);
 		}

@@ -454,6 +454,15 @@ int strfchr( char *string, char C ){
 	return -1;
 }
 
+// String Case-Insensitive comparison
+int strcicmp(char const *a, char const *b){
+    for (;; a++, b++) {
+        int d = tolower((unsigned char)*a) - tolower((unsigned char)*b);
+        if (d != 0 || !*a || !*b)
+            return d;
+    }
+}
+
 // sub-string
 char * substr( char *string, int start, int stop ){
 	char *sub = (char*) calloc( stop-start +1, sizeof(char) );
