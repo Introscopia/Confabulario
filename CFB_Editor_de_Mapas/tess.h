@@ -21,8 +21,8 @@ void sprint_wc( Wcoord A, char *buf );
 
 typedef struct{
 
-	char *name;
-	char *tags;
+	//char *name;
+	//char *tags;
 	int T1 [4];
 	int T2 [4];
 	int **seed;

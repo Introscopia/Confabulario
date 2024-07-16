@@ -217,6 +217,11 @@ bool load_tess_as_nodemap( char *code, vec2d **points, int16_t ***connections, i
 				(*connections)[i] = calloc( max_cnx, sizeof(int16_t) );
 			}
 
+			for (int i = 0; i < TT.seed_count; ++i ){
+				free( TT.seed[i] );
+			}
+			free( TT.seed );
+
 			//printf("ok_vec_count(&coord_codes): %d\n", ok_vec_count(&coord_codes) );
 
 			/*
