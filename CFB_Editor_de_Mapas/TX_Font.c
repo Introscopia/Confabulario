@@ -30,11 +30,15 @@ TX_Font render_TX_Font( SDL_Renderer *R, char *font_filename, int ptsize, SDL_Co
 	//out.adv = malloc( 94 * sizeof(int) );
 	out.scale = 1;
 
-	TTF_GlyphMetrics32( font, ' ', NULL, NULL, NULL, NULL, &(out.space) );
+	int s = 0;
+	TTF_GlyphMetrics32( font, ' ', NULL, NULL, NULL, NULL, &s );
+	out.space = s;
 	out.ascent = TTF_FontAscent( font );
 	out.descent = TTF_FontDescent( font );
+	if( out.descent < 0 ) out.descent *= -1;
 	//printf("font: %s, ascent: %d, descent: %d\n", font_filename, out.ascent, out.descent );
 	out.line_skip = TTF_FontLineSkip( font );
+	out.widest_char = 0;
 
 	for (char i = '!'; i <= '~'; ++i){
 
@@ -47,6 +51,8 @@ TX_Font render_TX_Font( SDL_Renderer *R, char *font_filename, int ptsize, SDL_Co
 		//out.bx[I] = minx;
 		out.adv[I] = advance;
 		if( minx < 0 ) out.adv[I] -= minx;
+
+		if( out.adv[I] > out.widest_char ) out.widest_char = out.adv[I];
 
 		//printf("%c - minx:%d, maxx:%d, advance:%d. maxx-minx:%d, advance-minx:%d\n", i, minx, maxx, advance, maxx-minx, advance-minx );
 		//printf("%d\n", out.w[I] == advance ); CONFIRMED
@@ -162,6 +168,7 @@ int TX_rendercopy_char( SDL_Renderer *R, TX_Font *font, char *string, float *x, 
 				//printf("minx: %d, maxx: %d, miny: %d, maxy: %d, advance: %d, surf->w: %d\n", minx, maxx, miny, maxy, advance, surf->w );
 				font->trans_ascii_adv[id] = advance;//surf->w;
 				if( minx < 0 ) font->trans_ascii_adv[id] -= minx;
+				if( font->trans_ascii_adv[id] > font->widest_char ) font->widest_char = font->trans_ascii_adv[id];
 				font->trans_ascii_x[id] = minx;
 				font->trans_ascii_h[id] = surf->h;
 				font->trans_ascii_textures[id] = SDL_CreateTextureFromSurface( R, surf );
@@ -242,6 +249,9 @@ void TX_render_glyph( SDL_Renderer *R, TX_Font *font, char c, float x, float y, 
 
 
 void TX_render_string( SDL_Renderer *R, TX_Font *font, char *string, float x, float y ){
+
+	if( string == NULL ) return;
+
 	int len = strlen( string );
 	int space = font->scale * font->space;
 	float ox = x;
@@ -268,23 +278,28 @@ void TX_render_string( SDL_Renderer *R, TX_Font *font, char *string, float x, fl
 
 
 //printf("j: %d, %c(%2X), bytes: %d\n", j, string[j], string[j], bytes );
-#define TOKENIZE()  for( j = i; j < len; ){                                 \
-						int bytes = 0;                                      \
-						int gw = TX_glyph_width( font, string+j, &bytes );  \
-						if( (uint8_t)(string[j]) < '!' ){                   \
-							break;                                          \
-						}                                                   \
-						ww += gw;                                           \
-						if( ww > width ){                                   \
-							ww -= gw;                                       \
-							j -= bytes;                                     \
-							break;                                          \
-						}                                                   \
-						j += bytes;                                         \
-					}                                                       \
+//!isalpha( string[j] )
+// previous delimiter check:  
+#define TOKENIZE()  for( j = i; j < len; ){                                  \
+						if( (uint8_t)(string[j]) < '!' ){                    \
+							break;                                           \
+						}                                                    \
+						int bytes = 0;                                       \
+						float gw = TX_glyph_width( font, string+j, &bytes ); \
+						ww += gw;                                            \
+						if( ww > width ){                                    \
+							ww -= gw;                                        \
+							j -= bytes;                                      \
+							break;                                           \
+						}                                                    \
+						j += bytes;                                          \
+					}                                                        \
 
 
 void TX_render_string_centered( SDL_Renderer *R, TX_Font *font, char *string, double x, double y ){
+	
+	if( string == NULL ) return;
+
 	float h;
 	TX_SizeText( font, string, NULL, &h );
 	//TX_render_string( R, font, string, x - ceil(w*0.5), y - ceil(h*0.5) );*/
@@ -326,7 +341,9 @@ void TX_render_string_centered( SDL_Renderer *R, TX_Font *font, char *string, do
 
 
 void TX_render_section( SDL_Renderer *R, TX_Font *font, char *string, int start, int end, float x, float y ){
-	//int len = strlen( string );
+
+	if( string == NULL ) return;
+
 	float ox = x;
 	for( int i = start; i < end; ){
 		if( string[i] == '\0' ) return;
@@ -350,152 +367,198 @@ void TX_render_section( SDL_Renderer *R, TX_Font *font, char *string, int start,
 	}
 }
 
+bool tightly_bound( char c ){
+	if( isalpha(c) ) return true;          // latin alphabet
+	if( (uint8_t)c > 0x7F ) return true;   // UTF8 
+	const char binders [] = "\"'!?,.:;_";  // some hand-picked word-binders. 
+	for (int i = 0; binders[i] != '\0'; ++i ){
+		if( c == binders[i] ) return true;
+	}
+	return false;
+}
+
+int TX_wrap_line( TX_Font *font, char *string, int start, float width, float *line_width ){
+
+	if( string == NULL ) return -1;
+	
+	float lw = 0;// line width
+	int i = start;
+	while( string[i] != '\0' ){
+		float tw = 0;// token width
+		int j = i;
+		if( tightly_bound( string[i] ) ){
+			do{
+				int bytes = 0;
+				float gw = TX_glyph_width( font, string+j, &bytes );
+				tw += gw;
+				if( tw > width ){
+					do{
+						tw -= gw;
+						do{ j -= 1; } while( j > start && (uint8_t)(string[j-1]) > 0x7F );
+						gw = TX_glyph_width( font, string+j, &bytes );
+					} while( lw + tw > width );
+					lw += tw;
+					if( line_width != NULL ) *line_width = lw;
+					return j;
+				}
+				j += bytes;
+			} while( isalpha(string[j]) || (uint8_t)(string[j]) > 0x7F );
+		}
+		else {
+			int bytes = 0;
+			tw = TX_glyph_width( font, string+i, &bytes );
+			j += bytes;
+		}
+
+		if( lw + tw > width || string[i] == '\n' ){
+			if( line_width != NULL ) *line_width = lw;
+			//string[i] == ' ' || string[i] == '\t' || string[i] == '\n'
+			if( (uint8_t)(string[i]) < '!' ) i += 1; //spaces and tabs disappear in the line breaks
+			return i;
+		}
+		else lw += tw;
+
+		i = j;
+	}
+	if( line_width != NULL ) *line_width = lw;
+	return i;
+}
+
 void TX_render_string_wrapped( SDL_Renderer *R, TX_Font *font, char *string, float x, float y, float width ){
 
+	if( string == NULL ) return;
 	int len = strlen( string );
-	float cx = x;//cursor
 	float cy = y;
-	float line_end = x + width;
 	float line_height = font->line_skip * font->scale;
-	float space = font->scale * font->space;
 
-	if( width < space ){
+	if( width < font->scale * font->widest_char ){
 		puts("TX_render_string_wrapped: umm.. that's a really narrow textbox you got there...");
 		return;
 	}
 
-	for ( int i = 0; i < len; ){
-		//printf("i: %d\n", i );
-		float ww = 0;//word width
-		int j;
-		TOKENIZE();
-		if( cx + ww > line_end ){
-			cx = x;
-			cy += line_height;
-		}
-		while( i < j ){
-			i += TX_rendercopy_char( R, font, string + i, &cx, cy );
-		}
-		if( i >= len ) break;
-
-		while( !( isalnum( string[i] ) || (uint8_t)(string[i]) > 0x7F ) ){
-			if( string[i] == ' ' ){
-				if( cx + space > line_end ){
-					cx = x;
-					cy += line_height;
-				}
-				else cx += space;
-			}
-			else if( string[i] == '\t' ){
-				if( cx + (TAB_SIZE*space) > line_end ){
-					cx = x;
-					cy += line_height;
-				}
-				else cx += (TAB_SIZE*space);
-			}
-			else if( string[i] == '\n' ){
-				cx = x;
-				cy += line_height;
-			}
-			else if( (uint8_t)(string[i]) < '!' ){//|| string[i] > '~'
-				if( cx + space > line_end ){
-					cx = x + space;
-					cy += line_height;
-				}
-				else cx += space;
-			}
-			else{
-				break;
-			}
-			++i;
-			if( i >= len ) return;
-		}
-	}
+	int i = 0;
+	do{
+		int j = TX_wrap_line( font, string, i, width, NULL );
+		if( i == j ) break;
+		TX_render_section( R, font, string, i, j, x, cy );
+		cy += line_height;
+		i = j;
+	} while( i < len );
 }
 
-void TX_render_string_wrapped_center_aligned( SDL_Renderer *R, TX_Font *font, char *string, int x, int y, int width ){
+float TX_whitespace( TX_Font *font, char *string, int start, int end ){
+	float ws = 0;
+	bool begun = 0;
+	for (int i = end-1; i >= start; --i ){
+		if( begun ){
+			if( string[i] == '\t' ) ws += TAB_SIZE * font->scale * font->space;
+			else if( string[i] == ' '  ) ws += font->scale * font->space;
+		}
+		else if( !isblank(string[i]) ){
+			begun = 1;
+		}
+	}
+	return ws;
+}
 
-	//printf("TXRSWCA: %s\n", string );
+void TX_render_string_wrapped_aligned( SDL_Renderer *R, TX_Font *font, char *string, int x, int y, int width, int alignment ){
+
+	if( string == NULL ) return;
+
+	if( alignment == TX_ALIGN_LEFT ){
+		return TX_render_string_wrapped( R, font, string, x, y, width );
+	}
+
 	int len = strlen( string );
-	int cy = y;
-	int line_end = x + width;
-	int line_height = font->line_skip * font->scale;
-	int space = font->scale * font->space;
-	int ls = 0;
-	int lw = 0;
+	float cy = y;
+	float line_height = font->line_skip * font->scale;
 
-	if( width < space ){
-		puts("TX_render_string_wrapped_center_aligned: umm.. that's a really narrow textbox you got there...");
+	if( width < font->scale * font->widest_char ){
+		puts("TX_render_string_wrapped_aligned: umm.. that's a really narrow textbox you got there...");
 		return;
 	}
-	
-	for ( int i = 0; i < len; ){
 
-		int ww = 0;//word width
-		int j;
-		TOKENIZE();
+	int i = 0;
+	do{
+		float lw = 0;
+		int j = TX_wrap_line( font, string, i, width, &lw );
+		if( i == j ) break;
 
-		int ccx = x + lw;
-
-		if( ccx + ww > line_end ){// this word [i..j] does not fit in the line.
-			// render the line [ls..i]
-			TX_render_section( R, font, string, ls, i, x + 0.5*(width - lw), cy );
-			lw = 0; ls = i;
-			cy += line_height;
-		}
-		else{
-			lw += ww;
-			i = j;
-		}
-		if( i >= len ) break;
-		
-		while( !( isalnum( string[i] ) || (uint8_t)(string[i]) > 0x7F ) ){
-			if( string[i] == ' ' ){
-				if( ccx + space > line_end ){
-					TX_render_section( R, font, string, ls, i, x + 0.5*(width - lw), cy );
-					lw = 0; ls = i;
-					cy += line_height;
-				}
-				else lw += space;
-			}
-			else if( string[i] == '\t' ){
-				if( ccx + (TAB_SIZE*space) > line_end ){
-					TX_render_section( R, font, string, ls, i, x + 0.5*(width - lw), cy );
-					lw = 0; ls = i;
-					cy += line_height;
-				}
-				else lw += (TAB_SIZE*space);
-			}
-			else if( string[i] == '\n' ){
-				TX_render_section( R, font, string, ls, i, x + 0.5*(width - lw), cy );
-				lw = 0; ls = i;
-				cy += line_height;
-			}
-			else if( (uint8_t)(string[i]) < '!' ){//|| string[i] > '~' 
-				if( ccx + space > line_end ){
-					TX_render_section( R, font, string, ls, i, x + 0.5*(width - lw), cy );
-					lw = space; ls = i;
-					cy += line_height;
-				}
-				else lw += space;
-			}
-			else{
+		switch( alignment ){
+			case TX_ALIGN_CENTER:
+				TX_render_section( R, font, string, i, j, round(x + (0.5 * (width - lw))), cy );
 				break;
-			}
-			++i;
-			if( i >= len ) break;
+			case TX_ALIGN_RIGHT:
+				TX_render_section( R, font, string, i, j, round(x + width - lw), cy );
+				break;
+			case TX_JUSTIFY:;
+				float s = font->space;
+				float ws = TX_whitespace( font, string, i, j );
+				font->space = round( font->space * ((width -lw + ws) / ws) );
+				TX_render_section( R, font, string, i, j, x, cy );
+				font->space = s;
+				break;
 		}
-	}
-	if( lw > 0 ){
-		TX_render_section( R, font, string, ls, len, x + 0.5*(width - lw), cy );
-	}
+		cy += line_height;
+		i = j;
+	} while( i < len );
 }
 
-void TX_cursor_after( TX_Font *font, char *string, int *x, int *y ){
+void TX_render_wrapped_section( SDL_Renderer *R, TX_Font *font, char *string, int stop, int x, int y, int width, int alignment ){
+	
+	if( string == NULL ) return;
+
+	int len = strlen( string );
+	float cy = y;
+	float line_height = font->line_skip * font->scale;
+
+	if( width < font->scale * font->widest_char ){
+		puts("TX_render_string_wrapped_aligned: umm.. that's a really narrow textbox you got there...");
+		return;
+	}
+
+	int i = 0;
+	do{
+		float lw = 0;
+		int j = TX_wrap_line( font, string, i, width, &lw );
+		if( i == j ) break;
+
+		if( j > stop ) j = stop;
+
+		switch( alignment ){
+			case TX_ALIGN_LEFT:
+				TX_render_section( R, font, string, i, j, x, cy );
+				break;
+			case TX_ALIGN_CENTER:
+				TX_render_section( R, font, string, i, j, round(x + (0.5 * (width - lw))), cy );
+				break;
+			case TX_ALIGN_RIGHT:
+				TX_render_section( R, font, string, i, j, round(x + width - lw), cy );
+				break;
+			case TX_JUSTIFY:;
+				float s = font->space;
+				float ws = TX_whitespace( font, string, i, j );
+				font->space = round( font->space * ((width -lw + ws) / ws) );
+				TX_render_section( R, font, string, i, j, x, cy );
+				font->space = s;
+				break;
+		}
+
+		if( j == stop ) break;
+
+		cy += line_height;
+		i = j;
+	} while( i < len );
+}
+
+void TX_cursor_after( TX_Font *font, char *string, int stop, float *x, float *y ){
+
+	if( string == NULL ) return;
+
 	if( x != NULL ){
 		*x = 0;
-		int space = font->scale * font->space;
-		for ( int i = 0; string[i] != '\0'; ){
+		float space = font->scale * font->space;
+		for ( int i = 0; i < stop && string[i] != '\0'; ){
 			int bytes = 1;
 			if( string[i] == '\n' ){
 				*x = 0;
@@ -519,155 +582,73 @@ void TX_cursor_after( TX_Font *font, char *string, int *x, int *y ){
 		*y = lines * font->scale * font->line_skip;
 	}
 }
-void TX_cursor_after_wrapped( TX_Font *font, char *string, int width, int *x, int *y ){
+
+void TX_cursor_after_wrapped_aligned( TX_Font *font, char *string, int stop, int width, float *x, float *y, int alignment ){
+
+	if( string == NULL ) return;
+
 	int len = strlen( string );
-	int cx = 0;//cursor
-	int cy = 0;
-	int line_height = font->line_skip * font->scale;
-	int space = font->scale * font->space;
+	if( stop > len ) stop = len;
+	float cy = 0;
+	float line_height = font->line_skip * font->scale;
 
-	if( width < space ) puts("TX_cursor_after_wrapped: umm.. that's a really narrow textbox you got there...");
-
-	for ( int i = 0; i < len; ){
-
-		int ww = 0;//word width
-		int j;
-		TOKENIZE();
-		if( cx + ww > width ){
-			cx = 0;
-			cy += line_height;
-		}
-		else{
-			cx += ww;
-			i = j;
-		}
-
-		if( i >= len ) break;
-
-		while( !( isalnum( string[i] ) || (uint8_t)(string[i]) > 0x7F ) ){
-			if( string[i] == ' ' ){
-				if( cx + space > width ){
-					cx = 0;
-					cy += line_height;
-				}
-				else cx += space;
-			}
-			else if( string[i] == '\t' ){
-				if( cx + (TAB_SIZE*space) > width ){
-					cx = 0;
-					cy += line_height;
-				}
-				else cx += (TAB_SIZE*space);
-			}
-			else if( string[i] == '\n' ){
-				cx = 0;
-				cy += line_height;
-			}
-			else if( (uint8_t)(string[i]) < '!' ){// || string[i] > '~'
-				if( cx + space > width ){
-					cx = space;
-					cy += line_height;
-				}
-				else cx += space;
-			}
-			else{
-				break;
-				//int I =  string[i] - '!';
-				//int cw = font->scale * font->adv[I];
-				//if( cx + cw > line_end ){
-				//	cx = x;
-				//	cy += line_height;
-				//}
-				//SDL_Rect src = (SDL_Rect){ font->x[I], 0, font->w[I], font->h };
-				//SDL_RenderCopy( R, font->texture, &src, &(SDL_Rect){ cx + (font->bx[I] * font->scale), cy, font->scale*src.w, font->scale*src.h } );
-				//cx += cw;
-			}
-			++i;
-			if( i >= len ) break;
-		}
-	}
-	if( x != NULL ){
-		*x = cx;
-	}
-	if( y != NULL ){
-		*y = cy;
-	}
-}
-
-void TX_cursor_after_wrapped_center_aligned( TX_Font *font, char *string, int width, int *x, int *y ){
-	int len = strlen( string );
-	int cy = 0;
-	int line_end = width;
-	int line_height = font->line_skip * font->scale;
-	int space = font->scale * font->space;
-	int lw = 0;
-
-	if( width < space ){
-		puts("TX_cursor_after_wrapped_center_aligned: umm.. that's a really narrow textbox you got there...");
+	if( width < font->scale * font->widest_char ){
+		puts("TX_cursor_after_wrapped_aligned: umm.. that's a really narrow textbox you got there...");
 		return;
 	}
-	
-	for ( int i = 0; i < len; ){
 
-		int ww = 0;//word width
-		int j;
-		TOKENIZE();
-
-		int ccx = lw;
-
-		if( ccx + ww > line_end ){
-			lw = 0;
-			cy += line_height;
-		}
-		else{
-			lw += ww;
-			i = j;
-		}
+	int i = 0;
+	do{
+		float lw = 0;
+		int j = TX_wrap_line( font, string, i, width, &lw );
 		
-		while( !( isalnum( string[i] ) || (uint8_t)(string[i]) > 0x7F ) ){
-			if( string[i] == ' ' ){
-				if( ccx + space > line_end ){
-					lw = 0;
-					cy += line_height;
-				}
-				else lw += space;
-			}
-			else if( string[i] == '\t' ){
-				if( ccx + (TAB_SIZE*space) > line_end ){
-					lw = 0;
-					cy += line_height;
-				}
-				else lw += (TAB_SIZE*space);
-			}
-			else if( string[i] == '\n' ){
-				lw = 0;
-				cy += line_height;
-			}
-			else if( (uint8_t)(string[i]) < '!' ){// || string[i] > '~'
-				if( ccx + space > line_end ){
-					lw = space;
-					cy += line_height;
-				}
-				else lw += space;
-			}
-			else{
-				break;
-			}
-			++i;
-			if( i >= len ) break;
-		}
-	}
+		if( j > stop ){
 
-	if( x != NULL ){
-		*x = lw + (0.5*(width - lw));
-	}
-	if( y != NULL ){
-		*y = cy;
-	}
+			if( x != NULL ){
+
+				float sw = 0;
+				if( alignment != TX_JUSTIFY ){
+					TX_SizeTextUntil( font, string + i, stop-i, &sw, NULL );
+				}
+
+				switch( alignment ){
+					case TX_ALIGN_LEFT:
+						*x = sw;
+						break;
+					case TX_ALIGN_CENTER:
+						*x = sw + round(0.5 * (width - lw));
+						break;
+					case TX_ALIGN_RIGHT:
+						*x = sw + round(width - lw);
+						break;
+					case TX_JUSTIFY:;
+						float s = font->space;
+						float ws = TX_whitespace( font, string, i, j );
+						font->space = round( font->space * ((width -lw + ws) / ws) );
+						TX_SizeTextUntil( font, string + i, stop-i, &sw, NULL );
+						font->space = s;
+						*x = sw;
+						break;
+				}
+			}
+
+			if( y != NULL ){
+				*y = cy;
+			}
+
+			return;
+		}
+
+		cy += line_height;
+		i = j;
+	} while( i < len );	
 }
 
 // returns index of the longest line
 int TX_SizeText( TX_Font *font, char *string, float *w, float *h ){
+
+	if( string == NULL ) return -1;
+
 	int ll = 0;
 	if( w != NULL ){
 		*w = 0;
@@ -716,6 +697,9 @@ int TX_SizeText( TX_Font *font, char *string, float *w, float *h ){
 }
 
 void TX_SizeTextUntil( TX_Font *font, char *string, int stop, float *w, float *h ){
+
+	if( string == NULL ) return;
+
 	if( w != NULL ){
 		*w = 0;
 		float max = 0;
@@ -750,61 +734,27 @@ void TX_SizeTextUntil( TX_Font *font, char *string, int stop, float *w, float *h
 }
 
 
-int TX_wrapped_string_height( TX_Font *font, char *string, int width ){
+float TX_wrapped_string_height( TX_Font *font, char *string, int width ){
+
+	if( string == NULL ) return -1;
+
 	int len = strlen( string );
-	int cx = 0;//cursor
-	int h = 1;
-	int space = font->scale * font->space;
+	int h = 0;
 
-	//printf("TX_wrapped_string_height of: %s\n", string );
-
-	for ( int i = 0; i < len; ){
-
-		int ww = 0;//word width
-		int j;
-		TOKENIZE();
-		if( cx + ww > width ){
-			cx = 0;
-			h += 1;
-		}
-
-		cx += ww;
-		i = j;
-
-		while( !( isalnum( string[i] ) || (uint8_t)(string[i]) > 0x7F ) ){
-			if( string[i] == ' ' ){
-				if( cx + space > width ){
-					cx = 0;
-					h += 1;
-				}
-				else cx += space;
-			}
-			else if( string[i] == '\t' ){
-				if( cx + (TAB_SIZE*space) > width ){
-					cx = 0;
-					h += 1;
-				}
-				else cx += (TAB_SIZE*space);
-			}
-			else if( string[i] == '\n' ){
-				cx = 0;
-				h += 1;
-			}
-			else if( (uint8_t)(string[i]) < '!' ){// || string[i] > '~'
-				if( cx + space > width ){
-					cx = space;
-					h += 1;
-				}
-				else cx += space;
-			}
-			else{
-				break;
-			}
-			++i;
-			if( i >= len ) break;
-		}
+	if( width < font->scale * font->widest_char ){
+		puts("TX_wrapped_string_height: umm.. that's a really narrow textbox you got there...");
+		return -1;
 	}
-	//printf("? %d: %d\n", h, h * font->line_skip * font->scale );
+
+	int i = 0;
+	do{
+		float lw = 0;
+		int j = TX_wrap_line( font, string, i, width, &lw );
+		if( i == j ) break;
+		h += 1;
+		i = j;
+	} while( i < len );
+	
 	return h * font->line_skip * font->scale;
 }
 
@@ -817,78 +767,37 @@ static void append( int **list, int *len, int *size, int i ){
 	}
 	(*list)[ *len ] = i;
 }
-/*
-	cx = 0;
-	*lines += 1;
-	if( *lines >= size ){
-		size *= 2;
-		indices = realloc( indices, size * sizeof(int) );
-	}
-	indices[ *lines ] = i;*/
-
 
 int *TX_wrapping_indices( TX_Font *font, char *string, int width, int *lines ){
 	int len = strlen( string );
 	int cx = 0;//cursor
 	*lines = 0;
-	int space = font->scale * font->space;
-
+	float space = font->scale * font->space;
 	int size = ceil( 3 * ( (len * space) / ((float)width) ) );
 	if( size <= 0 ) size = 1;
 	int *indices = malloc( size * sizeof(int) );
 	indices[0] = 0;
 
-	for ( int i = 0; i < len; ){
-		int ww = 0;//word width int we = 0;//word end
-		int j;
-		TOKENIZE();
-		if( cx + ww > width ){
-			cx = 0;
-			append( &indices, lines, &size, i );
-		}
+	if( string == NULL ) return;
+	float line_height = font->line_skip * font->scale;
 
-		cx += ww;
-		i = j;
-
-		while( !( isalnum( string[i] ) || (uint8_t)(string[i]) > 0x7F ) ){
-			if( string[i] == ' ' ){
-				if( cx + space > width ){
-					cx = 0;
-					append( &indices, lines, &size, i+1 );
-				}
-				else cx += space;
-			}
-			else if( string[i] == '\t' ){
-				if( cx + (TAB_SIZE*space) > width ){
-					cx = 0;
-					append( &indices, lines, &size, i+1 );
-				}
-				else cx += (TAB_SIZE*space);
-			}
-			else if( string[i] == '\n' ){
-				cx = 0;
-				append( &indices, lines, &size, i+1 );
-			}
-			else if( (uint8_t)(string[i]) < '!' ){// || string[i] > '~'
-				if( cx + space > width ){
-					cx = space;
-					append( &indices, lines, &size, i );
-				}
-				else cx += space;
-			}
-			else{
-				break;
-			}
-			++i;
-			if( i >= len ) break;
-		}
+	if( width < font->scale * font->widest_char ){
+		puts("TX_wrapping_indices: umm.. that's a really narrow textbox you got there...");
+		return;
 	}
+
+	int i = 0;
+	do{
+		int j = TX_wrap_line( font, string, i, width, NULL );
+		if( i == j ) break;
+		append( &indices, lines, &size, j );
+		i = j;
+	} while( i < len );
 
 	*lines += 1;
 	indices = realloc( indices, (*lines) * sizeof(int) );
 	return indices;
 }
-
 
 
 
@@ -936,6 +845,7 @@ int TX_rendercopyExF_char( SDL_Renderer *R, TX_Font *font, char *string, double 
 				//printf("minx: %d, maxx: %d, miny: %d, maxy: %d, advance: %d\n", minx, maxx, miny, maxy, advance );
 				font->trans_ascii_adv[id] = advance;//surf->w;
 				if( minx < 0 ) font->trans_ascii_adv[id] -= minx;
+				if( font->trans_ascii_adv[id] > font->widest_char ) font->widest_char = font->trans_ascii_adv[id];
 				font->trans_ascii_x[id] = minx;
 				font->trans_ascii_h[id] = surf->h;
 				font->trans_ascii_textures[id] = SDL_CreateTextureFromSurface( R, surf );
@@ -1154,148 +1064,69 @@ void init_typist( Typist *T, char *string, int period, SDL_Color *c ){
 
 	T->str = string;
 	T->len = strlen( string );
-	T->act = malloc( T->len + 1 );
-	strcpy( T->act, string );
-	T->act[0] = '\0';
 	T->I = 0;
-	T->P = period;
-	T->Pa = period;
+	T->P = period-1;
+	T->fc = T->P;
 	T->cursor_color = c;
-	
 }
 
 void reinit_typist( Typist *T, char *string, int period ){
 
 	T->str = string;
 	T->len = strlen( string );
-	T->act = realloc( T->act, T->len + 1 );
-	strcpy( T->act, string );
-	T->act[0] = '\0';
 	T->I = 0;
 	T->P = period;
-	T->Pa = period;
-	
+	T->fc = period;
 }
 
 void clear_typist( Typist *T ){
-
 	T->str = NULL;
 	T->len = 0;
-	free( T->act );
-	T->act = NULL;
 	T->I = 0;	
 }
 
 bool typing_done( Typist *T ){
-	if( T->act == NULL ) return 1;
-	else return T->I > T->len;
+	return T->I >= T->len;
 }
 
-void typist_step( SDL_Renderer *R, TX_Font *font, Typist *T, int X, int Y ){
-
-	TX_render_string( R, font, T->act, X, Y );
-
-	if( T->I < T->len ){
-		int x = 0, y = 0;
-		TX_cursor_after( font, T->act, &x, &y );
-		int bytes  = 0;
-		float adv = TX_glyph_width( font, T->str + T->I, &bytes );
-		SDL_SetRenderDraw_SDL_Color( R, T->cursor_color );
-		SDL_RenderFillRect( R, &(SDL_Rect){ X+x, Y+y, adv, font->scale * font->h } );
-	}
-
-	if( T->Pa <= 0 ){
+void typist_step( Typist *T ){
+	if( T->fc <= 0 ){
 		do{
-			int bytes = 0;
-			TX_glyph_width( font, T->str + T->I, &bytes );
-
-			for (int i = 0; i < bytes; ++i ){
-				T->act[ T->I + i ] = T->str[ T->I + i ];
-			}
-			T->I += bytes;
-			
+			int bytes = bytes_in_a_utf_codepoint( T->str[ T->I ] );
+			T->I += bytes;			
 			if( T->I >= T->len ){
 				T->I = T->len;
 				break;
 			}
-			T->act[ T->I ] = '\0';
-
 		} while( T->str[ T->I ] == '\n' );
 
-		T->Pa = T->P;
+		T->fc = T->P;
 	}
-	else T->Pa -= 1;
+	else T->fc -= 1;
 }
 
+void render_typist( SDL_Renderer *R, TX_Font *font, Typist *T, float X, float Y, int w, int alignment ){
 
-void typist_step_W( SDL_Renderer *R, TX_Font *font, Typist *T, int X, int Y, int w ){
-
-	TX_render_string_wrapped( R, font, T->act, X, Y, w );
+	if( w <= 0 ){
+		TX_render_section(  R, font, T->str, 0, T->I, X, Y );
+	}else{
+		TX_render_wrapped_section( R, font, T->str, T->I, X, Y, w, alignment );
+	}
 
 	if( T->I < T->len ){
-		int x = 0, y = 0;
-		TX_cursor_after_wrapped( font, T->act, w, &x, &y );
+		float x = 0, y = 0;
+		if( w <= 0 ){
+			TX_cursor_after( font, T->str, T->I, &x, &y );
+		}else{
+			TX_cursor_after_wrapped_aligned( font, T->str, T->I, w, &x, &y, alignment );
+		}
 		int bytes  = 0;
 		float adv = TX_glyph_width( font, T->str + T->I, &bytes );
-		SDL_SetRenderDraw_SDL_Color( R, T->cursor_color );
-		SDL_RenderFillRect( R, &(SDL_Rect){ X+x, Y+y, adv, font->scale * font->h } );
+		if( adv > 0 ){
+			SDL_SetRenderDraw_SDL_Color( R, T->cursor_color );
+			SDL_RenderFillRectF( R, &(SDL_FRect){ X+x, Y+y, adv, font->scale * font->h } );
+		}
 	}
 
-	if( T->Pa <= 0 ){
-		do{
-			int bytes = 0;
-			TX_glyph_width( font, T->str + T->I, &bytes );
-
-			for (int i = 0; i < bytes; ++i ){
-				T->act[ T->I + i ] = T->str[ T->I + i ];
-			}
-			T->I += bytes;
-
-			if( T->I > T->len ){
-				//T->I = T->len;
-				break;
-			}
-			T->act[ T->I ] = '\0';
-
-		} while( T->str[ T->I ] == '\n' );
-
-		T->Pa = T->P;
-	}
-	else T->Pa -= 1;
-}
-
-void typist_step_WCA( SDL_Renderer *R, TX_Font *font, Typist *T, int X, int Y, int w ){
-
-	TX_render_string_wrapped_center_aligned( R, font, T->act, X, Y, w );
-
-	if( T->I < T->len ){
-		int x = 0, y = 0;
-		TX_cursor_after_wrapped_center_aligned( font, T->act, w, &x, &y );
-		int bytes  = 0;
-		float adv = TX_glyph_width( font, T->str + T->I, &bytes );
-		SDL_SetRenderDraw_SDL_Color( R, T->cursor_color );
-		SDL_RenderFillRect( R, &(SDL_Rect){ X+x, Y+y, adv, font->scale * font->h } );
-	}
-
-	if( T->Pa <= 0 ){
-		do{
-			int bytes = 0;
-			TX_glyph_width( font, T->str + T->I, &bytes );
-
-			for (int i = 0; i < bytes; ++i ){
-				T->act[ T->I + i ] = T->str[ T->I + i ];
-			}
-			T->I += bytes;
-
-			if( T->I >= T->len ){
-				T->I = T->len;
-				break;
-			}
-			T->act[ T->I ] = '\0';
-
-		} while( T->str[ T->I ] == '\n' );
-
-		T->Pa = T->P;
-	}
-	else T->Pa -= 1;
+	typist_step( T );
 }

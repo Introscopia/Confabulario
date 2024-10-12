@@ -2,11 +2,17 @@
 #define TX_FONT_H_INCLUDED
 
 #include "basics.h"
+#include <ctype.h>
 #include <float.h>
 #include <SDL_ttf.h>
 #include "ok_lib.h"
 
 #define TAB_SIZE 4
+
+enum{ TX_ALIGN_LEFT,
+	  TX_ALIGN_CENTER,
+	  TX_ALIGN_RIGHT,
+	  TX_JUSTIFY };
 
 typedef struct {
 	char *name;
@@ -15,7 +21,8 @@ typedef struct {
 	int16_t adv [94];
 	//int *bx;
 	//int *w;
-	int space;
+	float space;
+	int widest_char;
 	int ascent, descent;
 	int h;
 	int line_skip;
@@ -57,18 +64,18 @@ void TX_render_string_curved  ( SDL_Renderer *R, TX_Font *font, char *string, do
 void TX_render_section( SDL_Renderer *R, TX_Font *font, char *string, int start, int end, float x, float y );
 
 void TX_render_string_wrapped( SDL_Renderer *R, TX_Font *font, char *string, float x, float y, float width );
+void TX_render_string_wrapped_aligned( SDL_Renderer *R, TX_Font *font, char *string, int x, int y, int width, int alignment );
 
-void TX_render_string_wrapped_center_aligned( SDL_Renderer *R, TX_Font *font, char *string, int x, int y, int width );
+void TX_render_wrapped_section( SDL_Renderer *R, TX_Font *font, char *string, int stop, int x, int y, int width, int alignment );
 
-void TX_cursor_after( TX_Font *font, char *string, int *x, int *y );
-void TX_cursor_after_wrapped( TX_Font *font, char *string, int width, int *x, int *y );
-void TX_cursor_after_wrapped_center_aligned( TX_Font *font, char *string, int width, int *x, int *y );
+void TX_cursor_after( TX_Font *font, char *string, int stop, float *x, float *y );
+void TX_cursor_after_wrapped_aligned( TX_Font *font, char *string, int stop, int width, float *x, float *y, int alignment );
 
-// returns index of the longest line
+// returns index of the longest line IF you pass in a valid w.
 int TX_SizeText( TX_Font *font, char *string, float *w, float *h );
 void TX_SizeTextUntil( TX_Font *font, char *string, int stop, float *w, float *h );
 
-int TX_wrapped_string_height( TX_Font *font, char *string, int width );
+float TX_wrapped_string_height( TX_Font *font, char *string, int width );
 
 int *TX_wrapping_indices( TX_Font *font, char *string, int width, int *lines );
 
@@ -77,10 +84,10 @@ int *TX_wrapping_indices( TX_Font *font, char *string, int width, int *lines );
 typedef struct typist_struct{
 
 	char *str;
-	char *act;
 	int len;
 	int I;
-	int P, Pa; // Period: frames per character "typed"
+	int P;  // Period: frames per character "typed"
+	int fc; // frame counter, counting from P to 0 every char
 	SDL_Color *cursor_color;
 
 } Typist;
@@ -91,9 +98,10 @@ void init_typist( Typist *T, char *string, int period, SDL_Color *c );
 void reinit_typist( Typist *T, char *string, int period );
 void clear_typist( Typist *T );
 bool typing_done( Typist *T );
-void typist_step( SDL_Renderer *R, TX_Font *font, Typist *T, int X, int Y );
-void typist_step_W( SDL_Renderer *R, TX_Font *font, Typist *T, int X, int Y, int w ); //wrapped
-void typist_step_WCA( SDL_Renderer *R, TX_Font *font, Typist *T, int X, int Y, int w ); //wrapped_center_aligned
+void typist_step( Typist *T );
+void render_typist( SDL_Renderer *R, TX_Font *font, Typist *T, float X, float Y, int w, int alignment );
+
+
 
 
 #endif

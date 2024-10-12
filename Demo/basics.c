@@ -1525,6 +1525,7 @@ int SDL_framerateDelay( int frame_period ){
 }
 
 
+
 int rect_area( SDL_Rect *r ){
 	return r->w * r->h;
 }

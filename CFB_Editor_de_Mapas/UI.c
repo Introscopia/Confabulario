@@ -315,13 +315,17 @@ void UI_build_static_label( UI_Set *S, int c, int r, SDL_Renderer * R, char *str
 	SDL_FRect dst = (SDL_FRect){ 0, 0, 0, 0 };
 	TX_SizeText( font, str, &(dst.w), &(dst.h) ); 
 	
-	int pad = 2;
-		 if( pos[0] == 'T' ) dst.y = pad;
-	else if( pos[0] == 'B' ) dst.y = ch - font->ascent - pad;
-	else                     dst.y = round(0.5*(ch - font->ascent));
-		 if( pos[1] == 'L' ) dst.x = pad;
-	else if( pos[1] == 'R' ) dst.x = cw - dst.w - pad;
+	float M = 6;
+	float A = font->scale * font->ascent;
+	float D = font->scale * font->descent;
+		 if( pos[0] == 'T' ) dst.y = M;
+	else if( pos[0] == 'B' ) dst.y = ch - A - M;
+	else                     dst.y = round(0.5*(ch - A));
+		 if( pos[1] == 'L' ) dst.x = M;
+	else if( pos[1] == 'R' ) dst.x = cw - dst.w - M;
 	else                     dst.x = round(0.5*(cw - dst.w));
+	if( dst.x < M ) dst.x = M;
+	dst.y += 2 - D;
 
 	S->static_set[ I ].texture = SDL_CreateTexture( R, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, cw, ch );
 	SDL_SetTextureBlendMode( S->static_set[ I ].texture, SDL_BLENDMODE_BLEND );
@@ -519,14 +523,17 @@ void toggle_set_label( UI_Interactive *E, TX_Font *font, TX_Font *antifont, char
 	toggle_data *data = (toggle_data*) E->data;
 	SDL_FRect dst = (SDL_FRect){ 0 };
 	TX_SizeText( font, str, &(dst.w), &(dst.h) );
-	int pad = 2;
-		 if( pos[0] == 'T' ) dst.y = pad;
-	else if( pos[0] == 'B' ) dst.y = E->rect.h - (font->scale * font->ascent) - pad;
-	else                     dst.y = round(0.5*(E->rect.h - (font->scale * font->ascent)));
-		 if( pos[1] == 'L' ) dst.x = pad;
-	else if( pos[1] == 'R' ) dst.x = E->rect.w - dst.w - pad;
+	float M = 6;
+	float A = font->scale * font->ascent;
+	float D = font->scale * font->descent;
+		 if( pos[0] == 'T' ) dst.y = M;
+	else if( pos[0] == 'B' ) dst.y = E->rect.h - A - M;
+	else                     dst.y = round(0.5*(E->rect.h - A));
+		 if( pos[1] == 'L' ) dst.x = M;
+	else if( pos[1] == 'R' ) dst.x = E->rect.w - dst.w - M;
 	else                     dst.x = round(0.5*(E->rect.w - dst.w));
-	dst.y += font->scale * font->descent + 2;
+	if( dst.x < M ) dst.x = M;
+	dst.y += 2 - D;
 	data->label = (TX_label){ font, NULL, E->rect.x + dst.x, E->rect.y + dst.y };
 	data->label.content = malloc( strlen(str)+1 );
 	strcpy( data->label.content, str );
@@ -630,14 +637,17 @@ void numset_set_label( UI_Interactive *E, TX_Font *font, TX_Font *antifont, char
 	numset_data *data = (numset_data*) E->data;
 	SDL_FRect dst = (SDL_FRect){ 0 };
 	TX_SizeText( font, str, &(dst.w), &(dst.h) );
-	int pad = 2;
-		 if( pos[0] == 'T' ) dst.y = pad;
-	else if( pos[0] == 'B' ) dst.y = E->rect.h - (font->scale * font->ascent) - pad;
-	else                     dst.y = round(0.5*(E->rect.h - (font->scale * font->ascent)));
-		 if( pos[1] == 'L' ) dst.x = pad;
-	else if( pos[1] == 'R' ) dst.x = E->rect.w - dst.w - pad;
+	float M = 6;
+	float A = font->scale * font->ascent;
+	float D = font->scale * font->descent;
+		 if( pos[0] == 'T' ) dst.y = M;
+	else if( pos[0] == 'B' ) dst.y = E->rect.h - A - M;
+	else                     dst.y = round(0.5*(E->rect.h - A));
+		 if( pos[1] == 'L' ) dst.x = M;
+	else if( pos[1] == 'R' ) dst.x = E->rect.w - dst.w - M;
 	else                     dst.x = round(0.5*(E->rect.w - dst.w));
-	dst.y += font->scale * font->descent + 2;
+	if( dst.x < M ) dst.x = M;
+	dst.y += 2 - D;
 	data->label = (TX_label){ font, NULL, E->rect.x + dst.x, E->rect.y + dst.y };
 	data->label.content = malloc( strlen(str)+1 );
 	strcpy( data->label.content, str );
@@ -860,14 +870,17 @@ void numcycle_set_label( UI_Interactive *E, TX_Font *font, char *str, char pos[2
 	numcycle_data *data = (numcycle_data*) E->data;
 	SDL_FRect dst = (SDL_FRect){ 0 };
 	TX_SizeText( font, str, &(dst.w), &(dst.h) );
-	int pad = 2;
-		 if( pos[0] == 'T' ) dst.y = pad;
-	else if( pos[0] == 'B' ) dst.y = E->rect.h - font->ascent - pad;
-	else                     dst.y = round(0.5*(E->rect.h - font->ascent));
-		 if( pos[1] == 'L' ) dst.x = pad;
-	else if( pos[1] == 'R' ) dst.x = E->rect.w - dst.w - pad;
+	float M = 6;
+	float A = font->scale * font->ascent;
+	float D = font->scale * font->descent;
+		 if( pos[0] == 'T' ) dst.y = M;
+	else if( pos[0] == 'B' ) dst.y = E->rect.h - A - M;
+	else                     dst.y = round(0.5*(E->rect.h - A));
+		 if( pos[1] == 'L' ) dst.x = M;
+	else if( pos[1] == 'R' ) dst.x = E->rect.w - dst.w - M;
 	else                     dst.x = round(0.5*(E->rect.w - dst.w));
-	dst.y += font->scale * font->descent + 2;
+	if( dst.x < M ) dst.x = M;
+	dst.y += 2 - D;
 	data->label = (TX_label){ font, NULL, E->rect.x + dst.x, E->rect.y + dst.y };
 	data->label.content = malloc( strlen(str)+1 );
 	strcpy( data->label.content, str );
@@ -1826,7 +1839,9 @@ void dialog_display( SDL_Renderer *R, UI_Interactive *E ){
 		String_chainlink* link = get_link( data->log, data->typist_index );
 
 		SDL_RenderSetClipRect( R, &(data->log_rect) );
-		typist_step_W( R, data->font, &(data->typist), data->log_rect.x, data->log_rect.y + link->y + data->scroll, data->log_rect.w );
+		render_typist( R, data->font, &(data->typist), data->log_rect.x, 
+					   data->log_rect.y + link->y + data->scroll, data->log_rect.w,
+					   TX_ALIGN_LEFT );
 		SDL_RenderSetClipRect( R, NULL );
 
 		if( typing_done( &(data->typist) ) ){
@@ -1840,8 +1855,6 @@ void dialog_display( SDL_Renderer *R, UI_Interactive *E ){
 			else{
 				puts("typing done");
 				refresh_dialog_texture( R, E );
-				free( data->typist.act );
-				data->typist.act = NULL;
 			}
 		}
 	}
@@ -1874,7 +1887,6 @@ void dialog_destroy( UI_Interactive *E ){
 	if( data->hyperlink_indices != NULL ){
 		free( data->hyperlink_indices );
 	}
-	free( data->typist.act );
 	free( E->data );
 	//puts("destroyed dialog.");
 }
@@ -2555,10 +2567,11 @@ void number_input_destroy( UI_Interactive *E ){
 
 // --- --- --- --- --- --- --- --- --- --- --- ---  /number input Element
 // --- --- --- --- --- --- --- --- --- --- --- --- text box input Element
+
+
 /*
 typedef struct {
-	char** incumbency;
-	int size, len;
+	STRB *incumbency;
 	int cursor, cursorX, cursorY;
 	bool cursor_on, render_flag;
 	int xmargin, ymargin;
@@ -2573,12 +2586,12 @@ typedef struct {
 
 } textbox_data;*/
 
-void UI_build_textbox( UI_Set *S, int c, int r, TX_Font *font, int sbw, SDL_Renderer *R,
+void UI_build_textbox( UI_Set *S, int c, int r, STRB *incumbency, TX_Font *font, int sbw, SDL_Renderer *R,
 					   SDL_Color lo, SDL_Color mo, SDL_Color hi ){
 	int I = S->build_index;
 	S->set[ I ].rect = calc_rect( S, c, r );
 	textbox_data *data = malloc( sizeof(textbox_data) );
-	*data = (textbox_data){ NULL, 0, 0,
+	*data = (textbox_data){ incumbency,
 							0, 0, 0, 
 							0, 0, 
 							8, 8, 
@@ -2610,45 +2623,33 @@ void UI_build_textbox( UI_Set *S, int c, int r, TX_Font *font, int sbw, SDL_Rend
 void textbox_set_string( UI_Interactive *E, char *str ){
 
 	textbox_data *data = (textbox_data*) E->data;
-	data->len = strlen( str );
-	
-	//if( *(data->incumbency) != NULL ) free( *(data->incumbency) );
-	if( data->len > 0 ){
-		if( data->size < data->len ){
-			data->size = data->len + 1;
-			*(data->incumbency) = realloc( *(data->incumbency), data->size * sizeof(char) );
-		}
-		strcpy( *(data->incumbency), str );
-	}
-	else{
-		data->size = 8;
-		*(data->incumbency) = realloc( *(data->incumbency), data->size * sizeof(char) );
-		memset( *(data->incumbency), 0, 8 );
-	}
+
+	STRB_copy( data->incumbency, str );
+
 	data->scrolling_value = -(data->scroll);
 	data->render_flag = 1;
 }
 
-void textbox_set_incumbency( UI_Interactive *E, char **incumbency, int size ){
+/*void textbox_set_incumbency( UI_Interactive *E, char **incumbency, int size ){
 
 	textbox_data *data = (textbox_data*) E->data;
 
 	data->incumbency = incumbency;
 	if( size <= 0 ){
-		data->size = 8;
+		data->incumbency->cap = 8;
 		*(data->incumbency) = realloc( *(data->incumbency), 8 * sizeof(char) );
 		(*(data->incumbency))[0] = '\0';
-		data->len = 0;
+		data->incumbency->len = 0;
 	}
 	else{
-		data->len = strlen( *incumbency );
-		data->size = size;
+		data->incumbency->len = strlen( *incumbency );
+		data->incumbency->cap = size;
 	}
 	
 	data->scrolling_value = -(data->scroll);
 	data->render_flag = 1;
-	//printf("incumbency set!! size:%d, len:%d\n", data->size, data->len );
-}
+	//printf("incumbency set!! size:%d, len:%d\n", data->incumbency->cap, data->incumbency->len );
+}*/
 
 
 char textbox_mouse_motion( UI_Interactive *E, SDL_Event *event, bool IN ){
@@ -2669,7 +2670,7 @@ char textbox_mouse_down( UI_Interactive *E, SDL_Event *event, bool IN ){
 	}
 	else if( data->cursor_on ){
 		data->cursor_on = 0;
-		SDL_StopTextInput();
+		//SDL_StopTextInput();
 	}
 	return 0;
 }
@@ -2681,15 +2682,23 @@ char textbox_mouse_up( UI_Interactive *E, SDL_Event *event, bool IN ){
 	}
 	if( IN ){
 
+		if( data->incumbency->len <= 0 ){
+			data->cursor = 0;
+			data->cursor_on = 1;
+			data->cursorX = E->rect.x + data->xmargin;
+			data->cursorY = E->rect.y + data->ymargin;
+			return 1;
+		}
+
 		int lines;
-		int *wis = TX_wrapping_indices( data->font, *(data->incumbency), data->dst.w -2*data->xmargin, &lines );
+		int *wis = TX_wrapping_indices( data->font, data->incumbency->str, data->dst.w -2*data->xmargin, &lines );
 		
 		int mx = event->button.x - E->rect.x - data->xmargin;
-		int line_height = data->font->line_skip * data->font->scale;
-		int ml = (int)( (event->button.y - E->rect.y - data->ymargin - data->scroll) / ((float)line_height) );
+		float line_height = data->font->line_skip * data->font->scale;
+		int ml = (int)( (event->button.y - E->rect.y - data->ymargin - data->scroll) / line_height );
 
-		if( ml >= lines ){//clicked in empty space below the text
-			ml = lines-1;
+		if( ml >= lines-1 ){//clicked in empty space below the text
+			ml = lines-2;
 			mx += data->dst.w;//making sure the cursor goes to the end of the line
 		}
 
@@ -2697,22 +2706,17 @@ char textbox_mouse_up( UI_Interactive *E, SDL_Event *event, bool IN ){
 		int pcon = data->cursor_on;
 		data->cursor_on = 0;
 		int space = data->font->space * data->font->scale;
-		int end = ( ml == lines-1 )? data->len : wis[ ml+1 ];
+		int end = ( ml == lines-1 )? data->incumbency->len : wis[ ml+1 ];
 		int w = 0;
 		for (int i = wis[ml]; i < end; ){
 			int dw = 0;
 			int bytes = 1;
-			if( (*(data->incumbency))[i] == '\n' ){
+			if( data->incumbency->str[i] == '\n' ){
 				data->cursor = i;
 				data->cursor_on = 1;
 				break;
 			}
-			else if( (*(data->incumbency))[i] == '\t' ) w += 4 * space;
-			else if( (*(data->incumbency))[i] < '!' ){
-				dw += space;
-			}
-			else dw += TX_glyph_width( data->font, (*(data->incumbency)) + i, &bytes );
-			//data->font->adv[ (*(data->incumbency))[i]-'!' ] * data->font->scale;
+			else dw += TX_glyph_width( data->font, data->incumbency->str + i, &bytes );
 
 			if( w+dw > mx ){
 				data->cursor = i;
@@ -2737,7 +2741,7 @@ char textbox_mouse_up( UI_Interactive *E, SDL_Event *event, bool IN ){
 	}
 	else if( data->cursor_on ){
 		data->cursor_on = 0;
-		SDL_StopTextInput();
+		//SDL_StopTextInput();
 	}
 	return IN;
 }
@@ -2752,61 +2756,73 @@ char textbox_mouse_wheel( UI_Interactive *E, SDL_Event *event, bool IN ){
 
 static void textbox_calc_cursor( UI_Interactive *E ){
 	textbox_data *data = (textbox_data*) E->data;
-	int lines;
-	int *wis = TX_wrapping_indices( data->font, *(data->incumbency), data->dst.w -2*data->xmargin, &lines );
-	//for (int i = 0; i < lines; ++i) printf( "%d, ", wis[i] );
 
-	int line_height = data->font->line_skip * data->font->scale;
-	for (int i = 0; i < lines; ++i){
-		if( data->cursor >= wis[i] && ( i == lines-1 || data->cursor < wis[i+1] ) ){
-			int w = 0;
-			for ( int j = wis[i]; j < data->cursor; ){
-				int bytes = 1;
-				w += TX_glyph_width( data->font, (*(data->incumbency)) + j, &bytes );
-				j += bytes;
+	if( data->incumbency->len <= 0 ){
+		data->cursorX = E->rect.x + data->xmargin;
+		data->cursorY = E->rect.y + data->ymargin;
+	}
+	else{
+		int lines;
+		int *wis = TX_wrapping_indices( data->font, data->incumbency->str, data->dst.w -2*data->xmargin, &lines );
+		//for (int i = 0; i < lines; ++i) printf( "%d, ", wis[i] );
+
+		int line_height = data->font->line_skip * data->font->scale;
+		for (int i = 0; i < lines; ++i){
+			if( i == lines-2 || data->cursor < wis[i+1] ){
+				float w = 0;
+				int nl = 0;
+				for ( int j = wis[i]; j < data->cursor; ){
+					int bytes = 1;
+					w += TX_glyph_width( data->font, data->incumbency->str + j, &bytes );
+					if( data->incumbency->str[j] == '\n' ){
+						nl += 1;
+						w = 0;
+					}
+					j += bytes;
+				}
+				//printf("\n%d/%d, %c(%d), %d\n", i, lines, data->incumbency->str[wis[i]], wis[i], data->cursor );
+				//if( i == lines-1 ) i -= 1;
+				data->cursorX = E->rect.x + data->xmargin + w;
+				data->cursorY = E->rect.y + data->ymargin + ( (i + nl) * line_height );
+				break;
 			}
-			//printf("\n%d/%d, %c(%d), %d\n", i, lines, (*(data->incumbency))[wis[i]], wis[i], data->cursor );
-			data->cursorX = E->rect.x + data->xmargin + w;
-			data->cursorY = E->rect.y + data->ymargin + ( i * line_height );
-			break;
 		}
-	}
-	free( wis );
+		free( wis );
 
-	int Y = data->cursorY + data->scroll;
+		int Y = data->cursorY + data->scroll;
 
-	if( Y < E->rect.y + data->ymargin ){
-		data->scrolling_value = (E->rect.y + data->ymargin) - Y;
-	}
+		if( Y < E->rect.y + data->ymargin ){
+			data->scrolling_value = (E->rect.y + data->ymargin) - Y;
+		}
 
-	if( Y + line_height > E->rect.y + E->rect.h + data->ymargin ){
-		data->scrolling_value = (E->rect.y + E->rect.h) -(Y + line_height);
+		if( Y + line_height > E->rect.y + E->rect.h + data->ymargin ){
+			data->scrolling_value = (E->rect.y + E->rect.h) -(Y + line_height);
+		}
 	}
 }
 
 char textbox_key_down( UI_Interactive *E, SDL_Event *event, bool IN ){
 	textbox_data *data = (textbox_data*) E->data;
 	if( data->cursor_on ){
-		data->len = strlen(*(data->incumbency));
 
-		if( data->cursor < 0 || data->cursor > data->len || data->cursor >= data->size-1 ) data->cursor = data->len;
+		if( data->cursor < 0 || data->cursor > data->incumbency->len || data->cursor >= data->incumbency->cap-1 ) data->cursor = data->incumbency->len;
 		int pcursor = data->cursor;
 
 		int prev_bytes = 0;
-		if( data->cursor > 0 ) prev_bytes = retrobytes_in_a_utf_codepoint( *(data->incumbency) + data->cursor -1 );
+		if( data->cursor > 0 ) prev_bytes = retrobytes_in_a_utf_codepoint( data->incumbency->str + data->cursor -1 );
 		int curr_bytes = 0;
-		if( data->cursor < data->len ) curr_bytes = bytes_in_a_utf_codepoint( *(data->incumbency) + data->cursor    );
+		if( data->cursor < data->incumbency->len ) curr_bytes = bytes_in_a_utf_codepoint( data->incumbency->str[data->cursor] );
 
 		//printf( "%c (%d)\n", event->key.keysym.sym, event->key.keysym.sym );
 		char key = 0;
 
-			 if( event->key.keysym.sym == SDLK_LEFT  ) data->cursor = constrain( data->cursor - prev_bytes, 0, data->len );
-		else if( event->key.keysym.sym == SDLK_RIGHT ) data->cursor = constrain( data->cursor + curr_bytes, 0, data->len );
+			 if( event->key.keysym.sym == SDLK_LEFT  ) data->cursor = constrain( data->cursor - prev_bytes, 0, data->incumbency->len );
+		else if( event->key.keysym.sym == SDLK_RIGHT ) data->cursor = constrain( data->cursor + curr_bytes, 0, data->incumbency->len );
 		else if( event->key.keysym.sym == SDLK_UP   || event->key.keysym.sym == SDLK_DOWN ||
 				 event->key.keysym.sym == SDLK_HOME || event->key.keysym.sym == SDLK_END  ){
 			
 			int lines;
-			int *wis = TX_wrapping_indices( data->font, *(data->incumbency), data->dst.w -2*data->xmargin, &lines );
+			int *wis = TX_wrapping_indices( data->font, data->incumbency->str, data->dst.w -2*data->xmargin, &lines );
 
 			for (int i = 0; i < lines; ++i){
 				if( data->cursor >= wis[i] && ( i == lines-1 || data->cursor < wis[i+1] ) ){
@@ -2818,25 +2834,21 @@ char textbox_key_down( UI_Interactive *E, SDL_Event *event, bool IN ){
 						break;
 					}
 					else if( event->key.keysym.sym == SDLK_END ){
-						data->cursor = (i == lines-1)? data->len : wis[ i+1 ]-1;
+						data->cursor = (i == lines-1)? data->incumbency->len : wis[ i+1 ]-1;
 						break;
 					}
 
 						 if ( cursorJ < 0 )      data->cursor = 0;
-					else if ( cursorJ >= lines ) data->cursor = data->len;
+					else if ( cursorJ >= lines ) data->cursor = data->incumbency->len;
 					else{
 						int space = data->font->space * data->font->scale;
 						//int line_height = data->font->line_skip * data->font->scale;
-						int end = (cursorJ == lines-1)? data->len : wis[ cursorJ+1 ];
+						int end = (cursorJ == lines-1)? data->incumbency->len : wis[ cursorJ+1 ];
 						int w = 0;
 						for ( int j = wis[ cursorJ ]; j < end; ){
-							int dx = 0;
+							float dx = 0;
 							int bytes = 1;
-							if( (*(data->incumbency))[j] == '\t' ) dx += 4 * space;
-							else if( (*(data->incumbency))[j] < '!' ){
-								dx += space;
-							}
-							else dx += TX_glyph_width( data->font, (*(data->incumbency)) + j, &bytes );
+							dx = TX_glyph_width( data->font, data->incumbency->str + j, &bytes );
 							//data->font->adv[ (*(data->incumbency))[j] -'!' ] * data->font->scale;
 
 							int nc = E->rect.x + data->xmargin + w + dx;
@@ -2861,15 +2873,13 @@ char textbox_key_down( UI_Interactive *E, SDL_Event *event, bool IN ){
 		}
 		else if( event->key.keysym.sym == SDLK_BACKSPACE && data->cursor > 0 ){
 			for (int c = 0; c < prev_bytes; ++c ){
-				str_delete_char( *(data->incumbency), data->cursor-1, data->len );
-				data->len -= 1;
+				STRB_delete( data->incumbency, data->cursor-1 );
 				data->cursor -= 1;
 			}
 		}
-		else if( event->key.keysym.sym == SDLK_DELETE && data->cursor < data->len-1 ){
+		else if( event->key.keysym.sym == SDLK_DELETE && data->cursor < data->incumbency->len-1 ){
 			for (int c = 0; c < curr_bytes; ++c ){
-				str_delete_char( *(data->incumbency), data->cursor, data->len );
-				data->len -= 1;
+				STRB_delete( data->incumbency, data->cursor );
 			}
 		}
 		else if( event->key.keysym.sym == SDLK_TAB    ) key = '\t';
@@ -2878,49 +2888,29 @@ char textbox_key_down( UI_Interactive *E, SDL_Event *event, bool IN ){
 			const Uint8 *state = SDL_GetKeyboardState(NULL);
 			if( state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL] ){
 				if( event->key.keysym.sym == 'c' ){
-					SDL_SetClipboardText( *(data->incumbency) );
+					SDL_SetClipboardText( data->incumbency->str );
 				}
 				else if( event->key.keysym.sym == 'v' ){
 					char *cb =  SDL_GetClipboardText();
 					int tl = strlen( cb );
-					while( data->len + tl >= data->size - 1 ){
-						data->size *= 2;
-						if( data->size == 0 ) data->size = 8;
-						*(data->incumbency) = realloc( *(data->incumbency), data->size * sizeof(char) );
-						for (int i = data->len; i < data->size; ++i) (*(data->incumbency))[i] = 0;
-					}
-					str_insert_str( *(data->incumbency), cb, data->cursor );
+					STRB_insert_str( data->incumbency, cb, data->cursor );
 					data->cursor += tl;
-					data->len += tl;
+					data->incumbency->len += tl;
 					//for (int i = 0; i < len; ++i ){
-					//	str_insert_char( data->incumbency, cb[i], data->cursor, &(data->len), &(data->size) );
+					//	str_insert_char( data->incumbency, cb[i], data->cursor, &(data->incumbency->len), &(data->incumbency->cap) );
 					//	data->cursor += 1;
 					//}
 					SDL_free( cb );
 				}
 			}
 		}
-		/* This is now handled in text_input
-		else if( ascii_text( event->key.keysym.sym ) ){
-			key = event->key.keysym.sym;
-			const Uint8 *state = SDL_GetKeyboardState(NULL);
-			if( state[SDL_SCANCODE_LSHIFT] || state[SDL_SCANCODE_RSHIFT] ){
-				key = shifted_keys( key );
-			}
-		}
-		//puts("handled input...");*/
-		if( key ){
-			if( data->len >= data->size-1 ){
-				data->size *= 2;
-				if( data->size == 0 ) data->size = 8;
-				*(data->incumbency) = realloc( *(data->incumbency), data->size * sizeof(char) );
-				for (int i = data->len; i < data->size; ++i) (*(data->incumbency))[i] = 0;
-			}
-			str_insert_char( *(data->incumbency), key, data->cursor, data->size );
-			data->cursor += 1;
-			data->len += 1;
-		}
 
+
+		if( key ){
+			STRB_insert_char( data->incumbency, key, data->cursor );
+			data->cursor += 1;
+		}
+		
 		if( pcursor != data->cursor ){
 			textbox_calc_cursor( E );
 		}
@@ -2943,16 +2933,8 @@ char textbox_text_input( UI_Interactive *E, SDL_Event *event, bool IN ){
 	textbox_data *data = (textbox_data*) E->data;
 	if( data->cursor_on ){
 		int tl = strlen( event->text.text );
-		while( data->len + tl >= data->size - 1 ){
-			data->size *= 2;
-			if( data->size == 0 ) data->size = 8;
-			*(data->incumbency) = realloc( *(data->incumbency), data->size * sizeof(char) );
-			memset( *(data->incumbency) + data->len, 0, (data->size - data->len) * sizeof(char) );
-			//for (int i = data->len; i < data->size; ++i) (*(data->incumbency))[i] = '\0';
-		}
-		str_insert_str( *(data->incumbency), event->text.text, data->cursor );
+		STRB_insert_str( data->incumbency, event->text.text, data->cursor );
 		data->cursor += tl;
-		data->len += tl;
 		textbox_calc_cursor( E );
 		data->render_flag = 1;
 		return 1;
@@ -2966,7 +2948,7 @@ char textbox_text_editing( UI_Interactive *E, SDL_Event *event, bool IN ){
 		//composition = event.edit.text;
 	    //data->cursor = event->edit.start;
 	    //selection_len = event.edit.length;
-	    printf("editing.... {%s}\n", event->edit.text );
+	    //printf("editing.... {%s}\n", event->edit.text );
 		return 1;
 	}
 	return 0;
@@ -2976,7 +2958,7 @@ void textbox_display( SDL_Renderer *R, UI_Interactive *E ){
 	textbox_data *data = (textbox_data*) E->data;
 
 	if( data->render_flag ){
-		int nh = TX_wrapped_string_height( data->font, *(data->incumbency), data->dst.w -2*data->xmargin );
+		int nh = TX_wrapped_string_height( data->font, data->incumbency->str, data->dst.w -2*data->xmargin );
 		if( nh > data->dst.h ) nh += data->ymargin;
 		vertical_scrollbar_update( R, &(data->scrollbar), nh );
 	}
@@ -2993,7 +2975,7 @@ void textbox_display( SDL_Renderer *R, UI_Interactive *E ){
 		SDL_SetRenderTarget( R, data->texture );
 		SDL_SetRenderDraw_SDL_Color( R, data->colors + 0 );
 		SDL_RenderClear( R );
-		TX_render_string_wrapped( R, data->font, *(data->incumbency), data->xmargin, 
+		TX_render_string_wrapped( R, data->font, data->incumbency->str, data->xmargin, 
 								  data->ymargin + data->scroll, data->dst.w -2*data->xmargin );
 		SDL_SetRenderTarget( R, NULL );
 		data->render_flag = 0;
@@ -3008,9 +2990,9 @@ void textbox_display( SDL_Renderer *R, UI_Interactive *E ){
 	if( data->cursor_on ){
 		SDL_SetRenderDraw_SDL_Color( R, data->colors + 2 );
 		int Y = data->cursorY + data->scroll;
-		int X = data->cursorX + 1;
+		int X = data->cursorX;
 		SDL_RenderSetClipRect( R, &(E->rect) );
-		SDL_RenderDrawLine( R, X, Y, X, Y + (data->font->h * data->font->scale) ); X += 1;
+		SDL_RenderDrawLine( R, X, Y, X, Y + (data->font->h * data->font->scale) ); X -= 1;
 		SDL_RenderDrawLine( R, X, Y, X, Y + (data->font->h * data->font->scale) );
 		SDL_RenderSetClipRect( R, NULL );
 	}
@@ -3031,11 +3013,6 @@ void textbox_destroy( UI_Interactive *E ){
 	vertical_scrollbar_destroy( &(data->scrollbar) );
 	free( E->data );
 }
-
-
-
-
-
 
 
 // --- --- --- --- --- --- --- --- --- --- --- --- /text box input Element

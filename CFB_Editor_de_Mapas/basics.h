@@ -152,6 +152,7 @@ typedef struct stringbuilder{
 
 void STRB_init( STRB *S, int sz );
 void STRB_ensure( STRB *S, int len );
+void STRB_clear( STRB *S );
 void STRB_reset( STRB *S, int sz );
 void STRB_justify( STRB *S );
 void STRB_copy( STRB *S, char *str );

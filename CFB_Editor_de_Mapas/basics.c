@@ -502,11 +502,15 @@ void STRB_init( STRB *S, int sz ){
 }
 void STRB_ensure( STRB *S, int len ){
 	if( len >= S->cap ){
-		if( S->cap == 0 ){
-			S->cap = (ceil( len / 8.0 ) + 1 ) * 8;
-		}
-		else S->cap *= 2;
+		S->cap = ceil( ceil( len / 8.0 ) * 1.5 ) * 8;
+		if( S->cap <= 0 ) S->cap = 8;
 		S->str = realloc( S->str, S->cap * sizeof(char) );
+	}
+}
+void STRB_clear( STRB *S ){
+	S->len = 0;
+	if( S->cap > 0 ){
+		S->str[0] = '\0';
 	}
 }
 void STRB_reset( STRB *S, int sz ){

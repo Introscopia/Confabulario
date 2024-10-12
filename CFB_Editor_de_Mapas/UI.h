@@ -530,8 +530,7 @@ void number_input_destroy( UI_Interactive *E );
 // --- --- --- --- --- --- --- --- --- --- --- --- text box input Element
 
 typedef struct {
-	char **incumbency;
-	int size, len;
+	STRB *incumbency;
 	int cursor, cursorX, cursorY;
 	bool cursor_on, render_flag;
 	int xmargin, ymargin;
@@ -546,11 +545,11 @@ typedef struct {
 
 } textbox_data;
 
-void UI_build_textbox( UI_Set *S, int c, int r, TX_Font *font, int sbw, SDL_Renderer *R,
+void UI_build_textbox( UI_Set *S, int c, int r, STRB *incumbency, TX_Font *font, int sbw, SDL_Renderer *R,
 					   SDL_Color lo, SDL_Color mo, SDL_Color hi );
 
 void textbox_set_string( UI_Interactive *E, char *str );
-void textbox_set_incumbency( UI_Interactive *E, char **incumbency, int size );
+//void textbox_set_incumbency( UI_Interactive *E, char **incumbency, int size );
 
 char textbox_mouse_motion( UI_Interactive *E, SDL_Event *event, bool IN );
 char textbox_mouse_down( UI_Interactive *E, SDL_Event *event, bool IN );
@@ -563,9 +562,10 @@ char textbox_key_up( UI_Interactive *E, SDL_Event *event, bool IN );
 char textbox_text_input( UI_Interactive *E, SDL_Event *event, bool IN );
 char textbox_text_editing( UI_Interactive *E, SDL_Event *event, bool IN );
 
-void textbox_display( SDL_Renderer *renderer, UI_Interactive *E );
+void textbox_display( SDL_Renderer *R, UI_Interactive *E );
 
 void textbox_destroy( UI_Interactive *E );
+
 
 
 

@@ -49,10 +49,12 @@ void nodes_set_connection( Nodemap *M, int i, int j, bool value ){
 		return;
 	}
 	if( value ){
+		if( nodes_connected( M, i, j ) ) return;
 		M->connections[i][0] += 1;
 		M->connections[i][ M->connections[i][0] ] = j;
 	}
 	else{
+		if( !nodes_connected( M, i, j ) ) return;
 		int ji = 0;
 		for (int c = 1; c <= M->connections[i][0]; ++c ){
 			if( M->connections[i][c] == j ){

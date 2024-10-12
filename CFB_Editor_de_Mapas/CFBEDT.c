@@ -172,12 +172,15 @@ int main( int argc, char *argv[] ){
 	UI_Set TB_ui;
 	build_UI_Set( &TB_ui, 1, 8, 14, 17, 3.95, 10.95, width, height );
 	int tb_state = 0;
-	char *in_between = NULL;
 	char *instructions = NULL;
 	load_file_as_str( "Assets/instrucoes.txt", &instructions );
-	UI_build_textbox( &TB_ui, 10, 1, &font, 16, R, pal_lo, pal_mo, pal_hi );
+	int ibs = (strlen( instructions )+1);
+	STRB TB_STRB;
+	STRB_init( &TB_STRB, ibs );
+	UI_build_textbox( &TB_ui, 10, 1, &TB_STRB, &font, 16, R, pal_lo, pal_mo, pal_hi );
 	UI_Interactive *textbox = UI_last_element( &TB_ui );
-	puts("textbox built.");
+	textbox_data *tbdat = (textbox_data*) (textbox->data);
+	//puts("textbox built.");
 
 	UI_Set FB_ui;
 	build_UI_Set( &FB_ui, 1, 8, 14, 17, 3.95, 10.95, width, height );
@@ -345,10 +348,18 @@ int main( int argc, char *argv[] ){
 	int *affected = malloc( NM.N * sizeof(int) );
 	int affected_N = 0;*/
 
-	int ibs = (strlen( instructions )+1);
-	in_between = realloc( in_between, ibs * sizeof(char) );
-	strcpy( in_between, instructions );
-	textbox_set_incumbency( textbox, &in_between, ibs );
+
+	STRB_copy( &TB_STRB, instructions );
+	tbdat->render_flag = 1;
+
+	#define COPY_TB_TO_NODE() if( TB_STRB.len > 0 ){\
+								  NM.contents[selected[0]] = realloc( NM.contents[selected[0]], (TB_STRB.len + 1) );\
+								  strcpy( NM.contents[selected[0]], TB_STRB.str );\
+							  } else if( NM.contents[selected[0]] != NULL ){\
+							  	  free( NM.contents[selected[0]] );\
+							  	  NM.contents[selected[0]] = NULL;\
+							  }
+	
 	tb_state = 0;
 
 	vec2d *V = NULL;
@@ -450,14 +461,11 @@ int main( int argc, char *argv[] ){
 					export_nodemap( buf, &NM, labels, labels_N );
 
 					selected_N = 0;
-					if( tb_state != 0 ){
-						textbox_set_incumbency( textbox, &in_between, strlen(in_between)+1 );
-						tb_state = 0;
-					}
 					int len = strlen(buf);
 					buf[len-2]='\0';
 					sprintf( buf+256, "\n\n\nProjeto \"%s\" exportado com sucesso.", buf );
-					textbox_set_string( textbox, buf+256 );
+					STRB_copy( &TB_STRB, buf+256 );
+					tbdat->render_flag = 1;
 					DOCKED = TB;
 					tb_state = 0;
 					export = 0;
@@ -865,6 +873,10 @@ int main( int argc, char *argv[] ){
 									}
 									//GRABBING NODE
 									else if( !state[SDL_SCANCODE_LCTRL] && !state[SDL_SCANCODE_RCTRL] ){
+
+										if( tb_state == 1 ){
+											COPY_TB_TO_NODE();
+										}
 										
 										int sx = find_in_list( selected, selected_N, X );
 										if( sx < 0 ){
@@ -873,9 +885,12 @@ int main( int argc, char *argv[] ){
 											selection_altered = 1;
 										}
 
-										int cs = 0;
-										if( NM.contents[X] != NULL ) cs = strlen(NM.contents[X])+1;
-										textbox_set_incumbency( textbox, NM.contents + X, cs );
+										if( NM.contents[X] == NULL ){
+											STRB_clear( &TB_STRB );
+										} else {
+											STRB_copy( &TB_STRB, NM.contents[X] );
+										}
+										tbdat->render_flag = 1;
 										tb_state = 1;
 
 										offset = rtm;// v2d_diff( NM.points[X], rtm );
@@ -894,11 +909,12 @@ int main( int argc, char *argv[] ){
 									// CLICKED ON THE BG, DESELECT ALL
 									if( !(state[SDL_SCANCODE_LSHIFT] || state[SDL_SCANCODE_RSHIFT]) ){
 										selected_N = 0;
-										if( tb_state != 0 ){
-											textbox_set_incumbency( textbox, &in_between, strlen(in_between)+1 );
-											tb_state = 0;
+										if( tb_state == 1 ){
+											COPY_TB_TO_NODE();
 										}
-										textbox_set_string( textbox, instructions );
+										tb_state = 0;
+										STRB_copy( &TB_STRB, instructions );
+										tbdat->render_flag = 1;
 									}
 									if( !(state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL]) ){
 										if( DOCKED == TESS ){
@@ -974,11 +990,12 @@ int main( int argc, char *argv[] ){
 
 									selected_N = 0;
 
-									if( tb_state != 0 ){
-										textbox_set_incumbency( textbox, &in_between, strlen(in_between)+1 );
-										tb_state = 0;
+									if( tb_state == 1 ){
+										COPY_TB_TO_NODE();
 									}
-									textbox_set_string( textbox, instructions );
+									tb_state = 0;
+									STRB_copy( &TB_STRB, instructions );
+									tbdat->render_flag = 1;
 								}
 								//CREATE NODE
 								else{
@@ -1057,11 +1074,12 @@ int main( int argc, char *argv[] ){
 									DOCKED = TB;
 								}
 								else{
-									if( tb_state != 0 ){
-										textbox_set_incumbency( textbox, &in_between, strlen(in_between)+1 );
-										tb_state = 0;
+									if( tb_state == 1 ){
+										COPY_TB_TO_NODE();
 									}
-									textbox_set_string( textbox, "\n\n\nCódigo de ladrilho não reconhecido!" );
+									tb_state = 0;
+									STRB_copy( &TB_STRB, "\n\n\nCódigo de ladrilho não reconhecido!" );
+									tbdat->render_flag = 1;
 								}
 								
 								SDL_StopTextInput();
@@ -1218,18 +1236,19 @@ int main( int argc, char *argv[] ){
 				}
 
 				if( selection_altered && selected_N > 1 ){
+
+					if( tb_state == 1 ){
+						COPY_TB_TO_NODE();
+					}
 					sprintf( buf, "%d nodes selected.\n", selected_N );
-					STRB strb;
-					STRB_init( &strb, 0 );
-					STRB_append_str( &strb, buf );
+					STRB_copy( &TB_STRB, buf );
 					for (int i = 0; i < selected_N; ++i ){
 						if( i < selected_N-1 ) sprintf( buf, "%d, ", selected[i] );
 						else sprintf( buf, "%d.", selected[i] );
-						STRB_append_str( &strb, buf );
+						STRB_append_str( &TB_STRB, buf );
 					}
-					textbox_set_string( textbox, strb.str );
-					free( strb.str );
 					DOCKED = TB;
+					tbdat->render_flag = 1;
 					tb_state = 0;
 				}
 			}
